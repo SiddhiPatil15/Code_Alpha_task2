@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Premium Responsive Image Gallery</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: #e0e7ff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #111827;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #6366f1;
+    border-radius: 4px;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    height: 64px;
+    background: rgba(99, 102, 241, 0.2);
+    backdrop-filter: saturate(180%) blur(20px);
+    box-shadow: 0 1px 10px rgb(99 102 241 / 0.25);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 1000;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+    color: #e0e7ff;
+    gap: 6px;
+  }
+  .header-brand .material-icons {
+    font-size: 32px;
+    color: #818cf8;
+    filter: drop-shadow(0 0 2px rgba(99, 102, 241, 0.6));
+  }
+  .app-layout {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 64px);
+    overflow: hidden;
+  }
+  main.content-area {
+    flex-grow: 1;
+    padding: 24px 32px 32px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  h1.page-title {
+    font-weight: 900;
+    font-size: clamp(1.75rem, 2vw, 2.5rem);
+    color: #c7d2fe;
+    user-select: none;
+    margin: 0;
+    text-align: center;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 24px;
+  }
+  .gallery-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow:
+      0 4px 16px rgb(99 102 241 / 0.3),
+      inset 0 0 0 1px rgba(255 255 255 / 0.07);
+    cursor: pointer;
+    background: linear-gradient(135deg, #313369, #1e2251);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    transition:
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.3s ease;
+  }
+  .gallery-card:hover,
+  .gallery-card:focus-visible {
+    outline: none;
+    transform: translateY(-6px) scale(1.05);
+    box-shadow:
+      0 16px 40px rgba(99, 102, 241, 0.6),
+      inset 0 0 0 1px rgba(255 255 255 / 0.15);
+    z-index: 10;
+  }
+  .gallery-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 16px 16px 0 0;
+    transition: filter 0.4s ease;
+  }
+  .gallery-card .title {
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #e0e7ff;
+    text-align: center;
+    background: rgba(34, 34, 58, 0.7);
+    flex-grow: 1;
+    border-radius: 0 0 16px 16px;
+    user-select: text;
+  }
+  .gallery-card:hover img {
+    filter: brightness(1.1) saturate(1.1);
+  }
+  #lightboxOverlay {
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 20px;
+  }
+  #lightboxOverlay[aria-hidden="false"] {
+    display: flex;
+  }
+  #lightboxContent {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.9);
+    background: #222538;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+  #lightboxImage {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    background: #1e293b;
+  }
+  #lightboxTitle {
+    padding: 16px 24px;
+    color: #c7d2fe;
+    font-weight: 700;
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    text-align: center;
+    user-select: text;
+  }
+  #lightboxClose {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #c7d2fe;
+    font-size: 36px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    filter: drop-shadow(0 0 3px rgba(99, 102, 241, 0.8));
+    z-index: 1200;
+  }
+  #lightboxClose:hover,
+  #lightboxClose:focus-visible {
+    color: #6366f1;
+    outline: none;
+  }
+  .lightbox-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(99, 102, 241, 0.4);
+    border: none;
+    border-radius: 100%;
+    color: #e0e7ff;
+    font-size: 48px;
+    width: 56px;
+    height: 56px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 2px rgba(99, 102, 241, 0.8));
+    transition: background-color 0.3s ease;
+    user-select: none;
+    z-index: 1200;
+  }
+  .lightbox-nav-btn:hover,
+  .lightbox-nav-btn:focus-visible {
+    background: #6366f1;
+    outline: none;
+  }
+  #lightboxPrev {
+    left: 16px;
+  }
+  #lightboxNext {
+    right: 16px;
+  }
+  @media (max-width: 767px) {
+    main.content-area {
+      padding: 24px 16px 16px;
+    }
+    h1.page-title {
+      font-size: 1.8rem;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    main.content-area {
+      padding: 32px 24px 32px;
+    }
+  }
+  @media (min-width: 1024px) {
+    main.content-area {
+      padding: 32px 48px 48px;
+    }
+  }
+  .focus-visible:focus-visible {
+    outline: 3px solid #6366f1;
+    outline-offset: 2px;
+  }
+</style>
+
+</head>
+<body>
+<header role="banner" aria-label="Main header" >
+  <div class="header-brand" id="brandTitle" tabindex="0">
+    <span class="material-icons" aria-hidden="true">photo_library</span> ImageGallery
+  </div>
+</header>
+<div class="app-layout" style="flex-direction: column;">
+  <main class="content-area" role="main">
+    <h1 class="page-title">Image Gallery</h1>
+    <section class="gallery-grid" id="gallery" aria-live="polite" aria-relevant="additions removals" tabindex="0">
+    </section>
+  </main>
+</div>
+<div id="lightboxOverlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="lightboxTitle" tabindex="-1">
+  <div id="lightboxContent">
+    <button id="lightboxClose" aria-label="Close image viewer" title="Close viewer" >&#xE5CD;</button>
+    <img id="lightboxImage" src="" alt="" />
+    <div id="lightboxTitle"></div>
+    <button id="lightboxPrev" class="lightbox-nav-btn" aria-label="View previous image" title="Previous image">&#xE314;</button>
+    <button id="lightboxNext" class="lightbox-nav-btn" aria-label="View next image" title="Next image">&#xE315;</button>
+  </div>
+</div>
+<script>
+  (() => {
+    'use strict';
+    const images = [
+      {
+        id: 1,
+        title: 'Mountain Sunrise',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/24f7907f-41d4-4f93-a6e2-8b31beb68338.png',
+        alt: 'Green mountain under sunrise sky with light orange and pink colors',
+      },
+      {
+        id: 2,
+        title: 'Forest Waterfall',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/ee116940-81da-4899-a06d-b9932873cc99.png',
+        alt: 'Waterfall surrounded by dense green forest and mossy rocks',
+      },
+      {
+        id: 3,
+        title: 'Desert Dunes',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9f86ed13-b98c-4877-98a2-b659c05c7636.png',
+        alt: 'Wide sandy desert dunes under bright blue sky',
+      },
+      {
+        id: 4,
+        title: 'Lake Reflection',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/e77234a3-9c5b-49a5-8743-0a9d19e59c5f.png',
+        alt: 'Still lake reflecting mountain and clear sky',
+      },
+      {
+        id: 5,
+        title: 'Modern Building Facade',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/2aedb69a-b001-457c-8043-ad1065406fcb.png',
+        alt: 'Glass facade building with clear blue sky',
+      },
+      {
+        id: 6,
+        title: 'City Skyline',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/457464be-b87b-48bc-aaf0-7dbb84c7d7b6.png',
+        alt: 'Panoramic view of city skyline at sunset with skyscrapers',
+      },
+      {
+        id: 7,
+        title: 'Old Cathedral',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/476479eb-a740-4f64-94e4-89cb88f37f81.png',
+        alt: 'Historic cathedral with stone walls and spires',
+      },
+      {
+        id: 8,
+        title: 'Bridge Over River',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/bccb9fa4-3281-472b-b7ac-a6fde1267751.png',
+        alt: 'Long bridge spanning a calm river with trees along banks',
+      },
+      {
+        id: 9,
+        title: 'Rustic Cottage',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/3585ef11-2e6b-43f1-88d3-1cf490f62af9.png',
+        alt: 'Small rustic cottage with wooden walls and chimney',
+      },
+      {
+        id: 10,
+        title: 'Woman Smiling',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/f56aefe6-52b8-4b61-bccb-3158f02c5a89.png',
+        alt: 'Portrait of smiling woman with curly hair outdoors',
+      },
+      {
+        id: 11,
+        title: 'Man Working',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/563c2ced-37b2-47b4-a08f-57077a48ec42.png',
+        alt: 'Man focused on working with laptop in a coffee shop',
+      },
+      {
+        id: 12,
+        title: 'Friends Laughing',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/dc68087c-cacc-4ff1-9e35-83e3ffa81ae6.png',
+        alt: 'Group of friends laughing and having fun together',
+      },
+      {
+        id: 13,
+        title: 'Colorful Abstract',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/bf902ae9-7728-4d77-acab-d8f2807bd9db.png',
+        alt: 'Bright colorful abstract pattern with swirling shapes',
+      },
+      {
+        id: 14,
+        title: 'Light Bokeh',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/682f9a84-0e87-4783-a15f-e15825ecff63.png',
+        alt: 'Blurred light bokeh pattern with deep purple tones',
+      },
+      {
+        id: 15,
+        title: 'Neon Wave',
+        src: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/da4369b8-f4e5-4ce2-8b5e-bb5992f1fc34.png',
+        alt: 'Glowing neon wave lines on a dark background',
+      },
+    ];
+    const galleryEl = document.getElementById('gallery');
+    const lightboxOverlay = document.getElementById('lightboxOverlay');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxTitle = document.getElementById('lightboxTitle');
+    const lightboxCloseBtn = document.getElementById('lightboxClose');
+    const lightboxPrevBtn = document.getElementById('lightboxPrev');
+    const lightboxNextBtn = document.getElementById('lightboxNext');
+    let currentLightboxIndex = null;
+    function trapFocus(element) {
+      const focusableElementsString = 'a[href], area[href], input:not([disabled]), select:not([disabled]), ' +
+        'textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]';
+      let focusableElements = element.querySelectorAll(focusableElementsString);
+      focusableElements = Array.prototype.slice.call(focusableElements);
+
+      const firstTabStop = focusableElements[0];
+      const lastTabStop = focusableElements[focusableElements.length - 1];
+
+      function keyListener(e) {
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === firstTabStop) {
+              e.preventDefault();
+              lastTabStop.focus();
+            }
+          } else {
+            if (document.activeElement === lastTabStop) {
+              e.preventDefault();
+              firstTabStop.focus();
+            }
+          }
+        }
+        if (e.key === 'Escape') {
+          closeLightbox();
+        }
+      }
+
+      element.addEventListener('keydown', keyListener);
+      return () => element.removeEventListener('keydown', keyListener);
+    }
+    function renderGallery() {
+      galleryEl.innerHTML = '';
+      if (images.length === 0) {
+        galleryEl.innerHTML = '<p style="color:#cbd5e1; font-size:1.2rem; text-align:center; width: 100%;">No images available.</p>';
+        return;
+      }
+      images.forEach((img, idx) => {
+        const card = document.createElement('article');
+        card.className = 'gallery-card';
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `View image: ${img.title}`);
+        card.dataset.index = idx;
+        card.innerHTML = `
+          <img src="${img.src}" alt="${img.alt}" loading="lazy" />
+          <div class="title">${img.title}</div>
+        `;
+        card.addEventListener('click', () => openLightbox(idx));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openLightbox(idx);
+          }
+        });
+        galleryEl.appendChild(card);
+      });
+    }
+    let removeFocusTrap = null;
+
+    function openLightbox(index) {
+      if (index == null || index < 0 || index >= images.length) return;
+      currentLightboxIndex = index;
+      const img = images[index];
+      lightboxImage.src = img.src;
+      lightboxImage.alt = img.alt;
+      lightboxTitle.textContent = img.title;
+      lightboxOverlay.setAttribute('aria-hidden', 'false');
+      lightboxOverlay.style.display = 'flex';
+      lightboxCloseBtn.focus();
+      document.body.style.overflow = 'hidden'; // prevent background scroll
+      removeFocusTrap = trapFocus(lightboxOverlay);
+    }
+    function closeLightbox() {
+      lightboxOverlay.setAttribute('aria-hidden', 'true');
+      lightboxOverlay.style.display = 'none';
+      currentLightboxIndex = null;
+      lightboxImage.src = '';
+      lightboxImage.alt = '';
+      lightboxTitle.textContent = '';
+      document.body.style.overflow = '';
+      removeFocusTrap && removeFocusTrap();
+      const lastFocusedCard = galleryEl.querySelector('[tabindex="0"].focus-visible, [tabindex="0"]:focus');
+      if (lastFocusedCard) lastFocusedCard.focus();
+      else document.getElementById('brandTitle').focus();
+    }
+    function showPrevImage() {
+      if (currentLightboxIndex === null) return;
+      const newIndex = (currentLightboxIndex - 1 + images.length) % images.length;
+      openLightbox(newIndex);
+    }
+    function showNextImage() {
+      if (currentLightboxIndex === null) return;
+      const newIndex = (currentLightboxIndex + 1) % images.length;
+      openLightbox(newIndex);
+    }
+
+    
+    document.addEventListener('keydown', (e) => {
+      if (lightboxOverlay.getAttribute('aria-hidden') === 'false') {
+        switch (e.key) {
+          case 'ArrowLeft':
+            e.preventDefault();
+            showPrevImage();
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            showNextImage();
+            break;
+          case 'Escape':
+            e.preventDefault();
+            closeLightbox();
+            break;
+        }
+      }
+    });
+
+   
+    lightboxCloseBtn.addEventListener('click', closeLightbox);
+    lightboxPrevBtn.addEventListener('click', showPrevImage);
+    lightboxNextBtn.addEventListener('click', showNextImage);
+
+    
+    lightboxOverlay.addEventListener('click', (e) => {
+      if (e.target === lightboxOverlay) {
+        closeLightbox();
+      }
+    });
+
+    
+    function init() {
+      renderGallery();
+    }
+    window.addEventListener('load', init);
+  })();
+</script>
+
+</body>
+</html>
+
